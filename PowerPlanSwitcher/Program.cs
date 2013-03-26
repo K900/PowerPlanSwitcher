@@ -1,6 +1,8 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Drawing;
+using System.IO;
 using System.Windows.Forms;
 using Microsoft.Win32;
 
@@ -9,6 +11,11 @@ namespace PowerPlanSwitcher
     static class Program
     {
         private static NotifyIcon trayIcon;
+        private static string control_exe = Path.Combine(
+                Path.Combine(Environment.GetEnvironmentVariable("SystemRoot"), "system32"),
+                "control.exe");
+
+        private const string VERSION = "0.1";
 
         public static void updateMenu(ContextMenuStrip menu)
         {
@@ -23,7 +30,10 @@ namespace PowerPlanSwitcher
 
                 item.Click += new EventHandler(delegate(object sender, EventArgs e)
                 {
-                    PowerPlanManager.Active = new PowerPlan { Name = null, GUID = (Guid)((ToolStripMenuItem)sender).Tag };
+                    PowerPlanManager.Active = new PowerPlan {
+                        Name = null,
+                        GUID = (Guid)((ToolStripMenuItem)sender).Tag 
+                    };
                 });
 
                 menu.Items.Add(item);
@@ -31,18 +41,42 @@ namespace PowerPlanSwitcher
 
             menu.Items.Add(new ToolStripSeparator());
 
+            // Charge indicator
+            ToolStripMenuItem charge = new ToolStripMenuItem();
+            charge.Text = chargeString();
+            charge.Enabled = false;
+
+            menu.Items.Add(charge);
+
+            // Version info
+            ToolStripMenuItem version = new ToolStripMenuItem();
+            version.Text = String.Format("Version {0}", VERSION);
+            version.Enabled = false;
+
+            menu.Items.Add(version);
+
+            menu.Items.Add(new ToolStripSeparator());
+
+            // Control panel shortcut
+            ToolStripMenuItem cpanel = new ToolStripMenuItem();
+            cpanel.Text = "More settings...";
+            cpanel.Click += new EventHandler(delegate(object sender, EventArgs e)
+            {
+                Process.Start(control_exe, "/name Microsoft.PowerOptions");
+            });
+
+            menu.Items.Add(cpanel);
+
+            // Exit
             ToolStripMenuItem exit = new ToolStripMenuItem();
             exit.Text = "Exit";
-            exit.Click += new EventHandler(exitClicked);
+            exit.Click += new EventHandler(delegate(object sender, EventArgs e)
+            {
+                trayIcon.Visible = false;
+                Application.Exit();
+            });
 
             menu.Items.Add(exit);
-        }
-
-        static void exitClicked(object sender, EventArgs e)
-        {
-            trayIcon.Visible = false;
-            trayIcon.Dispose();
-            Application.Exit();
         }
 
         static void Main()
@@ -74,11 +108,34 @@ namespace PowerPlanSwitcher
             }
         }
 
+        private static bool isCharging()
+        {
+            return SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
+        }
+
+        private static int chargeLevel()
+        {
+            return (int)Math.Round(SystemInformation.PowerStatus.BatteryLifePercent * 100);
+        }
+
+        private static string chargeString()
+        {
+            string format;
+            if (isCharging())
+            {
+                format = "Charging: {0}%";
+            }
+            else
+            {
+                format = "Discharging: {0}%";
+            }
+            return String.Format(format, chargeLevel());
+        }
+
         private static void updateIcon()
         {
-            PowerStatus status = SystemInformation.PowerStatus;
-            bool online = (status.PowerLineStatus == PowerLineStatus.Online);
-            int percent = (int)Math.Round(status.BatteryLifePercent * 100);
+            bool online = isCharging();
+            int percent = chargeLevel();
 
             Bitmap iconBitmap;
             
@@ -108,7 +165,7 @@ namespace PowerPlanSwitcher
             }
 
             trayIcon.Icon = Icon.FromHandle(iconBitmap.GetHicon());
-            trayIcon.Text = String.Format("Power profile switcher: {0}%", percent);
+            trayIcon.Text = chargeString();
         }
 
         static void trayIcon_MouseUp(object sender, MouseEventArgs e)
