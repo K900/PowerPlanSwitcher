@@ -84,27 +84,27 @@ namespace PowerPlanSwitcher
             
             if (percent < 20)
             {
-                iconBitmap = online ? Resource1.gpm_battery_000_charging : Resource1.gpm_battery_000;
+                iconBitmap = online ? Icons.gpm_battery_000_charging : Icons.gpm_battery_000;
             }
             else if (percent < 40)
             {
-                iconBitmap = online ? Resource1.gpm_battery_020_charging : Resource1.gpm_battery_020;
+                iconBitmap = online ? Icons.gpm_battery_020_charging : Icons.gpm_battery_020;
             }
             else if (percent < 60)
             {
-                iconBitmap = online ? Resource1.gpm_battery_040_charging : Resource1.gpm_battery_040;
+                iconBitmap = online ? Icons.gpm_battery_040_charging : Icons.gpm_battery_040;
             }
             else if (percent < 80)
             {
-                iconBitmap = online ? Resource1.gpm_battery_060_charging : Resource1.gpm_battery_060;
+                iconBitmap = online ? Icons.gpm_battery_060_charging : Icons.gpm_battery_060;
             }
             else if (percent < 100)
             {
-                iconBitmap = online ? Resource1.gpm_battery_080_charging : Resource1.gpm_battery_080;
+                iconBitmap = online ? Icons.gpm_battery_080_charging : Icons.gpm_battery_080;
             }
             else
             {
-                iconBitmap = online ? Resource1.gpm_battery_100_charging : Resource1.gpm_battery_100;
+                iconBitmap = online ? Icons.gpm_battery_100_charging : Icons.gpm_battery_100;
             }
 
             trayIcon.Icon = Icon.FromHandle(iconBitmap.GetHicon());
