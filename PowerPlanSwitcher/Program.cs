@@ -31,7 +31,7 @@ namespace PowerPlanSwitcher
 
         private static string ChargeString()
         {
-            var format = IsCharging() ? "Charging: {0}%" : "Discharging: {0}%";
+            var format = IsCharging() ? Strings.Charging : Strings.Discharging;
             return String.Format(format, ChargeLevel());
         }
         #endregion
@@ -70,7 +70,7 @@ namespace PowerPlanSwitcher
             menu.Items.Add(charge);
 
             // Version info
-            var version = new ToolStripMenuItem {Text = String.Format("Version {0}", Version), Enabled = false};
+            var version = new ToolStripMenuItem {Text = String.Format(Strings.VersionString, Version), Enabled = false};
 
             menu.Items.Add(version);
 

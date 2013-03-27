@@ -61,6 +61,24 @@ namespace PowerPlanSwitcher {
         }
         
         /// <summary>
+        ///   Ищет локализованную строку, похожую на Charging: {0}%.
+        /// </summary>
+        internal static string Charging {
+            get {
+                return ResourceManager.GetString("Charging", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Ищет локализованную строку, похожую на Discharging: {0}% left.
+        /// </summary>
+        internal static string Discharging {
+            get {
+                return ResourceManager.GetString("Discharging", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Ищет локализованную строку, похожую на Exit.
         /// </summary>
         internal static string Exit {
@@ -75,6 +93,15 @@ namespace PowerPlanSwitcher {
         internal static string MoreSettings {
             get {
                 return ResourceManager.GetString("MoreSettings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Ищет локализованную строку, похожую на Version {0}.
+        /// </summary>
+        internal static string VersionString {
+            get {
+                return ResourceManager.GetString("VersionString", resourceCulture);
             }
         }
     }

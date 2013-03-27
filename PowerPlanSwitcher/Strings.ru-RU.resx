@@ -118,18 +118,18 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="Charging" xml:space="preserve">
-    <value>Charging: {0}%</value>
+    <value>Зарядка: {0}%</value>
   </data>
   <data name="Discharging" xml:space="preserve">
-    <value>Discharging: {0}% left</value>
+    <value>От батареи: осталось {0}%</value>
   </data>
   <data name="Exit" xml:space="preserve">
-    <value>Exit</value>
+    <value>Выход</value>
   </data>
   <data name="MoreSettings" xml:space="preserve">
-    <value>More settings...</value>
+    <value>Еще настройки...</value>
   </data>
   <data name="VersionString" xml:space="preserve">
-    <value>Version {0}</value>
+    <value>Версия {0}</value>
   </data>
 </root>
