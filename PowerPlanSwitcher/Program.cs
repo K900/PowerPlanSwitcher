@@ -12,7 +12,7 @@ namespace PowerPlanSwitcher
 {
     internal static class Program
     {
-        private const string Version = "0.1";
+        private const string Version = "0.2";
         private static NotifyIcon _trayIcon;
 
         private static readonly string ControlExe = Path.Combine(
