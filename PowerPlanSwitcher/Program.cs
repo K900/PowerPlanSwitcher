@@ -86,16 +86,19 @@ namespace PowerPlanSwitcher
             // Autostart
             var shortcutPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Startup),
                                             "PowerPlanSwitcher.lnk");
+            
             var autostart = new ToolStripMenuItem
                 {
                     Text = Strings.Autostart,
                     Checked = File.Exists(shortcutPath),
                     CheckOnClick = true
                 };
+
             autostart.Click += (sender, args) =>
                 {
                     if (((ToolStripMenuItem) sender).Checked)
                     {
+                        File.Delete(shortcutPath);
                         var shortcut = new ShellLink
                             {
                                 Target = Application.ExecutablePath,
