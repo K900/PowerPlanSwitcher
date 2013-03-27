@@ -3,38 +3,61 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Reflection;
 using System.Windows.Forms;
 using Microsoft.Win32;
 
 namespace PowerPlanSwitcher
 {
-    static class Program
+    internal static class Program
     {
-        private static NotifyIcon trayIcon;
-        private static string control_exe = Path.Combine(
-                Path.Combine(Environment.GetEnvironmentVariable("SystemRoot"), "system32"),
-                "control.exe");
+        private const string Version = "0.1";
+        private static NotifyIcon _trayIcon;
 
-        private const string VERSION = "0.1";
+        private static readonly string ControlExe = Path.Combine(
+            Path.Combine(Environment.GetEnvironmentVariable("SystemRoot"), "system32"),
+            "control.exe");
 
-        public static void updateMenu(ContextMenuStrip menu)
+        #region Information / helpers
+        private static bool IsCharging()
+        {
+            return SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
+        }
+
+        private static int ChargeLevel()
+        {
+            return (int)Math.Round(SystemInformation.PowerStatus.BatteryLifePercent * 100);
+        }
+
+        private static string ChargeString()
+        {
+            var format = IsCharging() ? "Charging: {0}%" : "Discharging: {0}%";
+            return String.Format(format, ChargeLevel());
+        }
+        #endregion
+
+        #region UI things
+        public static void UpdateMenu(ContextMenuStrip menu)
         {
             menu.Items.Clear();
 
-            foreach (PowerPlan plan in PowerPlanManager.FindAll())
+            foreach (var plan in PowerPlanManager.FindAll())
             {
-                ToolStripMenuItem item = new ToolStripMenuItem();
-                item.Text = plan.Name;
-                item.Tag = plan.GUID;
-                item.Checked = (plan.GUID == PowerPlanManager.Active.GUID);
-
-                item.Click += new EventHandler(delegate(object sender, EventArgs e)
-                {
-                    PowerPlanManager.Active = new PowerPlan {
-                        Name = null,
-                        GUID = (Guid)((ToolStripMenuItem)sender).Tag 
+                var item = new ToolStripMenuItem
+                    {
+                        Text = plan.Name,
+                        Tag = plan.Guid,
+                        Checked = (plan.Guid == PowerPlanManager.Active.Guid)
                     };
-                });
+
+                item.Click += delegate(object sender, EventArgs e)
+                    {
+                        PowerPlanManager.Active = new PowerPlan
+                            {
+                                Name = null,
+                                Guid = (Guid) ((ToolStripMenuItem) sender).Tag
+                            };
+                    };
 
                 menu.Items.Add(item);
             }
@@ -42,103 +65,41 @@ namespace PowerPlanSwitcher
             menu.Items.Add(new ToolStripSeparator());
 
             // Charge indicator
-            ToolStripMenuItem charge = new ToolStripMenuItem();
-            charge.Text = chargeString();
-            charge.Enabled = false;
+            var charge = new ToolStripMenuItem {Text = ChargeString(), Enabled = false};
 
             menu.Items.Add(charge);
 
             // Version info
-            ToolStripMenuItem version = new ToolStripMenuItem();
-            version.Text = String.Format("Version {0}", VERSION);
-            version.Enabled = false;
+            var version = new ToolStripMenuItem {Text = String.Format("Version {0}", Version), Enabled = false};
 
             menu.Items.Add(version);
 
             menu.Items.Add(new ToolStripSeparator());
 
             // Control panel shortcut
-            ToolStripMenuItem cpanel = new ToolStripMenuItem();
-            cpanel.Text = "More settings...";
-            cpanel.Click += new EventHandler(delegate(object sender, EventArgs e)
-            {
-                Process.Start(control_exe, "/name Microsoft.PowerOptions");
-            });
+            var cpanel = new ToolStripMenuItem {Text = Strings.MoreSettings};
+            cpanel.Click += (sender, e) => Process.Start(ControlExe, "/name Microsoft.PowerOptions");
 
             menu.Items.Add(cpanel);
 
             // Exit
-            ToolStripMenuItem exit = new ToolStripMenuItem();
-            exit.Text = "Exit";
-            exit.Click += new EventHandler(delegate(object sender, EventArgs e)
-            {
-                trayIcon.Visible = false;
-                Application.Exit();
-            });
+            var exit = new ToolStripMenuItem {Text = Strings.Exit};
+            exit.Click += delegate
+                {
+                    _trayIcon.Visible = false;
+                    Application.Exit();
+                };
 
             menu.Items.Add(exit);
         }
 
-        static void Main()
+        private static void UpdateIcon()
         {
-            // Set up icon
-            trayIcon = new NotifyIcon();
-            updateIcon();
-            trayIcon.MouseUp += new MouseEventHandler(trayIcon_MouseUp);
-
-            SystemEvents.PowerModeChanged += new PowerModeChangedEventHandler(SystemEvents_PowerModeChanged);
-
-            // Create menu
-            ContextMenuStrip menu = new ContextMenuStrip();
-            menu.Opening += new CancelEventHandler(menu_Opening);
-            updateMenu(menu);
-
-            // Add menu and start
-            trayIcon.ContextMenuStrip = menu;
-            trayIcon.Visible = true;
-            
-            Application.Run();
-        }
-
-        static void SystemEvents_PowerModeChanged(object sender, PowerModeChangedEventArgs e)
-        {
-            if (e.Mode == PowerModes.StatusChange)
-            {
-                updateIcon();
-            }
-        }
-
-        private static bool isCharging()
-        {
-            return SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
-        }
-
-        private static int chargeLevel()
-        {
-            return (int)Math.Round(SystemInformation.PowerStatus.BatteryLifePercent * 100);
-        }
-
-        private static string chargeString()
-        {
-            string format;
-            if (isCharging())
-            {
-                format = "Charging: {0}%";
-            }
-            else
-            {
-                format = "Discharging: {0}%";
-            }
-            return String.Format(format, chargeLevel());
-        }
-
-        private static void updateIcon()
-        {
-            bool online = isCharging();
-            int percent = chargeLevel();
+            var online = IsCharging();
+            var percent = ChargeLevel();
 
             Bitmap iconBitmap;
-            
+
             if (percent < 20)
             {
                 iconBitmap = online ? Icons.gpm_battery_000_charging : Icons.gpm_battery_000;
@@ -164,22 +125,56 @@ namespace PowerPlanSwitcher
                 iconBitmap = online ? Icons.gpm_battery_100_charging : Icons.gpm_battery_100;
             }
 
-            trayIcon.Icon = Icon.FromHandle(iconBitmap.GetHicon());
-            trayIcon.Text = chargeString();
+            _trayIcon.Icon = Icon.FromHandle(iconBitmap.GetHicon());
+            _trayIcon.Text = ChargeString();
         }
+        #endregion
 
-        static void trayIcon_MouseUp(object sender, MouseEventArgs e)
+        #region Event handlers
+        private static void PowerModeChanged(object sender, PowerModeChangedEventArgs e)
         {
-            if (e.Button == MouseButtons.Left)
+            if (e.Mode == PowerModes.StatusChange)
             {
-                System.Reflection.MethodInfo mi = typeof(NotifyIcon).GetMethod("ShowContextMenu", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-                mi.Invoke(trayIcon, null);
-            };
+                UpdateIcon();
+            }
         }
 
-        static void menu_Opening(object sender, CancelEventArgs e)
+        private static void MenuOpening(object sender, CancelEventArgs e)
         {
-            updateMenu((ContextMenuStrip)sender);
-        }   
+            UpdateMenu((ContextMenuStrip)sender);
+        }
+        #endregion
+
+        #region Left click tray icon superhack
+        private static void TrayIconClick(object sender, MouseEventArgs e)
+        {
+            if (e.Button != MouseButtons.Left) return;
+
+            var mi = typeof(NotifyIcon).GetMethod("ShowContextMenu",
+                                                   BindingFlags.Instance | BindingFlags.NonPublic);
+            mi.Invoke(_trayIcon, null);
+        }
+        #endregion
+
+        private static void Main()
+        {
+            // Set up icon
+            _trayIcon = new NotifyIcon();
+            UpdateIcon();
+            _trayIcon.MouseUp += TrayIconClick;
+
+            SystemEvents.PowerModeChanged += PowerModeChanged;
+
+            // Create menu
+            var menu = new ContextMenuStrip();
+            menu.Opening += MenuOpening;
+            UpdateMenu(menu);
+
+            // Add menu and start
+            _trayIcon.ContextMenuStrip = menu;
+            _trayIcon.Visible = true;
+
+            Application.Run();
+        }                                    
     }
 }

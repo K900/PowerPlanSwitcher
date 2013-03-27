@@ -15,7 +15,7 @@ namespace PowerPlanSwitcher
     public struct PowerPlan
     {
         public string Name;
-        public Guid GUID;
+        public Guid Guid;
     }
 
     public class PowerPlanManager
@@ -23,56 +23,53 @@ namespace PowerPlanSwitcher
         public static PowerPlan Active {
             get
             {
-                IntPtr pCurrentSchemeGuid = IntPtr.Zero;
-                WinAPI.PowerGetActiveScheme(IntPtr.Zero, ref pCurrentSchemeGuid);
-                Guid currentSchemeGuid = (Guid)Marshal.PtrToStructure(pCurrentSchemeGuid, typeof(Guid));
+                var pCurrentSchemeGuid = IntPtr.Zero;
+                WinApi.PowerGetActiveScheme(IntPtr.Zero, ref pCurrentSchemeGuid);
+                var currentSchemeGuid = (Guid)Marshal.PtrToStructure(pCurrentSchemeGuid, typeof(Guid));
                 return FindById(currentSchemeGuid);
             }
             set {
-                Guid schemeGuid = value.GUID;
-                WinAPI.PowerSetActiveScheme(IntPtr.Zero, ref schemeGuid);
+                var schemeGuid = value.Guid;
+                WinApi.PowerSetActiveScheme(IntPtr.Zero, ref schemeGuid);
             }
         }
 
         public static IEnumerable<PowerPlan> FindAll()
         {
-            Guid schemeGuid = Guid.Empty;
+            var schemeGuid = Guid.Empty;
 
-            uint sizeSchemeGuid = (uint)Marshal.SizeOf(typeof(Guid));
+            var sizeSchemeGuid = (uint)Marshal.SizeOf(typeof(Guid));
             uint schemeIndex = 0;
 
-            while (WinAPI.PowerEnumerate(IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, (uint)WinAPI.AccessFlags.ACCESS_SCHEME, schemeIndex, ref schemeGuid, ref sizeSchemeGuid) == 0)
+            while (WinApi.PowerEnumerate(IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, (uint)WinApi.AccessFlags.AccessScheme, schemeIndex, ref schemeGuid, ref sizeSchemeGuid) == 0)
             {
-                string friendlyName = ReadFriendlyName(schemeGuid);
-
-                yield return new PowerPlan { Name = friendlyName, GUID = schemeGuid };
-
+                var friendlyName = ReadFriendlyName(schemeGuid);
+                yield return new PowerPlan { Name = friendlyName, Guid = schemeGuid };
                 schemeIndex++;
             }
         }
 
         public static PowerPlan FindById(Guid id)
         {
-            IEnumerable<PowerPlan> plans = FindAll();
-            foreach (PowerPlan plan in plans) {
-                if (plan.GUID == id)
+            foreach (var plan in FindAll()) {
+                if (plan.Guid == id)
                 {
                     return plan;
                 }
             }
-            return new PowerPlan { };
+            return new PowerPlan();
         }
 
         private static string ReadFriendlyName(Guid schemeGuid)
         {
             uint sizeName = 1024;
-            IntPtr pSizeName = Marshal.AllocHGlobal((int)sizeName);
+            var pSizeName = Marshal.AllocHGlobal((int)sizeName);
 
             string friendlyName;
 
             try
             {
-                WinAPI.PowerReadFriendlyName(IntPtr.Zero, ref schemeGuid, IntPtr.Zero, IntPtr.Zero, pSizeName, ref sizeName);
+                WinApi.PowerReadFriendlyName(IntPtr.Zero, ref schemeGuid, IntPtr.Zero, IntPtr.Zero, pSizeName, ref sizeName);
                 friendlyName = Marshal.PtrToStringUni(pSizeName);
             }
             finally
@@ -84,25 +81,25 @@ namespace PowerPlanSwitcher
         }
     }
 
-    internal static class WinAPI
+    internal static class WinApi
     {
         [DllImport("PowrProf.dll")]
-        public static extern UInt32 PowerEnumerate(IntPtr RootPowerKey, IntPtr SchemeGuid, IntPtr SubGroupOfPowerSettingGuid, UInt32 AcessFlags, UInt32 Index, ref Guid Buffer, ref UInt32 BufferSize);
+        public static extern UInt32 PowerEnumerate(IntPtr rootPowerKey, IntPtr schemeGuid, IntPtr subGroupOfPowerSettingGuid, UInt32 acessFlags, UInt32 index, ref Guid buffer, ref UInt32 bufferSize);
 
         public enum AccessFlags : uint
         {
-            ACCESS_SCHEME = 16,
-            ACCESS_SUBGROUP = 17,
-            ACCESS_INDIVIDUAL_SETTING = 18
+            AccessScheme = 16,
+            AccessSubgroup = 17,
+            AccessIndividualSetting = 18
         }
 
         [DllImport("PowrProf.dll")]
-        public static extern UInt32 PowerReadFriendlyName(IntPtr RootPowerKey, ref Guid SchemeGuid, IntPtr SubGroupOfPowerSettingGuid, IntPtr PowerSettingGuid, IntPtr Buffer, ref UInt32 BufferSize);
+        public static extern UInt32 PowerReadFriendlyName(IntPtr rootPowerKey, ref Guid schemeGuid, IntPtr subGroupOfPowerSettingGuid, IntPtr powerSettingGuid, IntPtr buffer, ref UInt32 bufferSize);
 
         [DllImport("PowrProf.dll")]
-        public static extern uint PowerGetActiveScheme(IntPtr UserRootPowerKey, ref IntPtr ActivePolicyGuid);
+        public static extern uint PowerGetActiveScheme(IntPtr userRootPowerKey, ref IntPtr activePolicyGuid);
 
         [DllImport("PowrProf.dll")]
-        public static extern uint PowerSetActiveScheme(IntPtr UserRootPowerKey, ref Guid SchemeGuid);
+        public static extern uint PowerSetActiveScheme(IntPtr userRootPowerKey, ref Guid schemeGuid);
     }
 }
