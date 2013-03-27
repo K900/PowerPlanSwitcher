@@ -6,6 +6,7 @@ using System.IO;
 using System.Reflection;
 using System.Windows.Forms;
 using Microsoft.Win32;
+using vbAccelerator.Components.Shell;
 
 namespace PowerPlanSwitcher
 {
@@ -81,6 +82,36 @@ namespace PowerPlanSwitcher
             cpanel.Click += (sender, e) => Process.Start(ControlExe, "/name Microsoft.PowerOptions");
 
             menu.Items.Add(cpanel);
+
+            // Autostart
+            var shortcutPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Startup),
+                                            "PowerPlanSwitcher.lnk");
+            var autostart = new ToolStripMenuItem
+                {
+                    Text = Strings.Autostart,
+                    Checked = File.Exists(shortcutPath),
+                    CheckOnClick = true
+                };
+            autostart.Click += (sender, args) =>
+                {
+                    if (((ToolStripMenuItem) sender).Checked)
+                    {
+                        var shortcut = new ShellLink
+                            {
+                                Target = Application.ExecutablePath,
+                                WorkingDirectory = Path.GetDirectoryName(Application.ExecutablePath),
+                                Description = "Power Plan Switcher",
+                                DisplayMode = ShellLink.LinkDisplayMode.edmNormal
+                            };
+                        shortcut.Save(shortcutPath);
+                    }
+                    else
+                    {
+                        File.Delete(shortcutPath);
+                    }
+                };
+
+            menu.Items.Add(autostart);
 
             // Exit
             var exit = new ToolStripMenuItem {Text = Strings.Exit};

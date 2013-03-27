@@ -61,6 +61,15 @@ namespace PowerPlanSwitcher {
         }
         
         /// <summary>
+        ///   Ищет локализованную строку, похожую на Start with Windows.
+        /// </summary>
+        internal static string Autostart {
+            get {
+                return ResourceManager.GetString("Autostart", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Ищет локализованную строку, похожую на Charging: {0}%.
         /// </summary>
         internal static string Charging {
